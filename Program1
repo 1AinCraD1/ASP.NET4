@@ -1,0 +1,52 @@
+using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
+
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+
+app.MapGet("/Library", () => "Welcome to the Library!");
+
+app.MapGet("/Library/Books", async (HttpContext context) =>
+{
+    var booksJson = await System.IO.File.ReadAllTextAsync("books.json");
+    var books = JsonSerializer.Deserialize<List<Book>>(booksJson);
+    return Results.Json(books);
+});
+
+app.MapGet("/Library/Profile/{id?}", async (HttpContext context, int? id) =>
+{
+    var usersJson = await System.IO.File.ReadAllTextAsync("users.json");
+    var users = JsonSerializer.Deserialize<List<User>>(usersJson);
+
+    if (id.HasValue)
+    {
+        if (id < 0 || id > 5)
+        {
+            return Results.NotFound("User not found.");
+        }
+
+        var user = users.FirstOrDefault(u => u.Id == id.Value);
+        return user != null ? Results.Json(user) : Results.NotFound("User not found.");
+    }
+    else
+    {
+        var defaultUser = users.FirstOrDefault(u => u.Id == 0);
+        return Results.Json(defaultUser);
+    }
+});
+
+app.Run();
+
+public class Book
+{
+    public int Id { get; set; }
+    public string Title { get; set; }
+    public string Author { get; set; }
+}
+
+public class User
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Role { get; set; }
+}
